@@ -40,6 +40,7 @@ const App = () => {
   };
   const { name } = course;
   const { parts } = course;
+  console.log(name);
 
   return (
     <div>
