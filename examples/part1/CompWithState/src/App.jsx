@@ -1,19 +1,54 @@
-// import { useState } from "react";
+import { useState } from "react";
 import './App.css'
 
 const App = () => {
-  const persona = {
-    nombre: 'jose',
-    edad: 25
+  const [clicks, setClicks] = useState({
+    left: 0,
+    rigth: 0
+  })
+
+  const handelRigthClick = () => {
+    const newCliks = {
+      ...clicks,
+      rigth: clicks.rigth + 1      
+    }
+
+    setClicks(newCliks)
   }
-  
-  
-  const newPerson = {...persona, nombre:'Enmanuel', edad: 26}
-  
-  console.log(newPerson);
-  console.log(persona);
+
+  const handelLeftClick = () => {
+    const newClicks = {
+      ...clicks,
+      left: clicks.left + 1
+
+    }
+    setClicks(newClicks)
+  }
+
+  const View = ({clicks}) => {
+    return(
+      <>
+        <p>
+          contador de left {clicks.left}
+        </p>
+        <p>
+          contador de rigth {clicks.rigth}
+        </p>
+      </>
+    )
+  }
+
+  console.log({clicks});
   return (
-    <h1>hola mundo</h1>
+    <div>
+      <button onClick={handelLeftClick}>
+        left
+      </button>
+      <button onClick={handelRigthClick}>
+        rigth
+      </button>
+      <View clicks={clicks} />
+    </div>
   )
 }
 
