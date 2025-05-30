@@ -1,50 +1,73 @@
 import "./App.css";
+import { v4 as uuidv4 } from "uuid";
 import { useState, useEffect } from "react";
 import Filter from "./components/Filter";
 import PersonForm from "./components/PersonForm";
 import Persons from "./components/Persons";
-import axios from 'axios'
+import phonebookServices from "./services/phonebook";
 
 const App = () => {
-  const [persons, setPersons] = useState([]);
-
-  //Data
-  useEffect(() => {
-    axios
-    .get('http://localhost:3001/persons')
-    .then(response => {
-      console.log("fullfiled")
-      const data = response.data;
-
-      setPersons(data);
-    }
-    )
-  }, []);
-
   //states
+  const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [number, setNumber] = useState("");
   const [textFilter, setTextFilter] = useState("");
 
+  //Data
+  useEffect(() => {
+    phonebookServices.getAll().then((response) => setPersons(response));
+  }, []);
+
   //handle actions
   const addContact = (event) => {
-    event.preventDefault();
+  event.preventDefault();
 
-    if (persons.some((person) => person.name === newName)) {
-      alert(`${newName} is already added to phonebook`);
-      setNewName("");
-      setNumber("");
-      return;
+  const duplicate = persons.find((person) => person.name.trim() === newName.trim());
+
+  if (duplicate) {
+    const confirmMessage = `${newName} is already added to phonebook. Replace the old number with a new one?`;
+
+    if (window.confirm(confirmMessage)) {
+      const updatedContact = {
+        ...duplicate,
+        number: number,
+      };
+
+      phonebookServices
+        .edit(duplicate.id, updatedContact)
+        .then((returnedPerson) => {
+          setPersons(persons.map((p) =>
+            p.id === returnedPerson.id ? returnedPerson : p
+          ));
+          alert(`${returnedPerson.name} ha sido actualizado`);
+          setNumber("");
+          setNewName("");
+        })
+        .catch(() => {
+          alert(`No se pudo actualizar el contacto: ${duplicate.name}`);
+        });
     }
-    const newPerson = {
-      name: newName,
-      number: number,
-      id: persons.length + 1,
-    };
-    setNumber("");
-    setNewName(" ");
-    setPersons([...persons, newPerson]);
+
+    return; // ¡Importante! Para no continuar y crear duplicados
+  }
+
+  // Esta parte solo se ejecuta si no existe contacto con ese nombre
+  const newPerson = {
+    name: newName.trim(),
+    number: number,
+    id: uuidv4(),
   };
+
+  phonebookServices
+    .add(newPerson)
+    .then((response) => {
+      alert(`${response.name} ha sido agregado`);
+      setPersons([...persons, response]);
+      setNumber("");
+      setNewName("");
+    });
+};
+
 
   //onChange
   const onChangeNumber = (event) => setNumber(event.target.value);
@@ -59,6 +82,17 @@ const App = () => {
       : persons.filter((person) =>
           person.name.toLowerCase().includes(textFilter.toLowerCase())
         );
+
+  const onDelete = (id) => {
+    const maje = persons.find((p) => p.id === id);
+
+    if (window.confirm(`estas segure que quieres eliminar a ${maje.name}`)) {
+      phonebookServices.remove(id).then(() => {
+        const nuevas = persons.filter((person) => person.id !== id);
+        setPersons(nuevas);
+      });
+    }
+  };
 
   return (
     <div>
@@ -76,7 +110,7 @@ const App = () => {
 
       <h2>Numbers</h2>
       {filteredPersons.map((person) => (
-        <Persons key={person.id} person={person} />
+        <Persons key={person.id} person={person} onDelete={onDelete} />
       ))}
     </div>
   );
