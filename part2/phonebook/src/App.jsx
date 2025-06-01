@@ -20,60 +20,52 @@ const App = () => {
 
   //handle actions
   const addContact = (event) => {
-  event.preventDefault();
+    event.preventDefault();
 
-  const duplicate = persons.find((person) => person.name.trim() === newName.trim());
+    const isDuplicated = persons.find(
+      (person) => person.name.trim() === newName.trim()
+    );
 
-  if (duplicate) {
-    const confirmMessage = `${newName} is already added to phonebook. Replace the old number with a new one?`;
-
-    if (window.confirm(confirmMessage)) {
-      const updatedContact = {
-        ...duplicate,
-        number: number,
-      };
-
-      phonebookServices
-        .edit(duplicate.id, updatedContact)
-        .then((returnedPerson) => {
-          setPersons(persons.map((p) =>
-            p.id === returnedPerson.id ? returnedPerson : p
-          ));
-          alert(`${returnedPerson.name} ha sido actualizado`);
-          setNumber("");
-          setNewName("");
-        })
-        .catch(() => {
-          alert(`No se pudo actualizar el contacto: ${duplicate.name}`);
-        });
+    if (isDuplicated) {
+      const confirmMessage = `${newName} is already added to phonebook. Replace the old number with a new one?`;
+      if (window.confirm(window.confirm(confirmMessage))) {
+        const persona = {
+          ...isDuplicated,
+          number: number,
+        };
+        phonebookServices
+          .edit(isDuplicated.id, persona)
+          .then((returned) => {
+            setPersons(
+              persons.map((p) => (p.id === isDuplicated.id ? returned : p))
+            );
+            setNewName("");
+            setNumber("");
+          })
+          .catch((error) =>
+            console.error("algo malo paso y no pudimos resolverlo", error)
+          );
+      }
+      return;
     }
 
-    return; // ¡Importante! Para no continuar y crear duplicados
-  }
+    const newPerson = {
+      name: newName.trim(),
+      number: number,
+      id: uuidv4(),
+    };
 
-  // Esta parte solo se ejecuta si no existe contacto con ese nombre
-  const newPerson = {
-    name: newName.trim(),
-    number: number,
-    id: uuidv4(),
-  };
-
-  phonebookServices
-    .add(newPerson)
-    .then((response) => {
+    phonebookServices.add(newPerson).then((response) => {
       alert(`${response.name} ha sido agregado`);
       setPersons([...persons, response]);
       setNumber("");
       setNewName("");
     });
-};
-
+  };
 
   //onChange
   const onChangeNumber = (event) => setNumber(event.target.value);
-
   const onChangeName = (event) => setNewName(event.target.value);
-
   const onFilter = (event) => setTextFilter(event.target.value);
 
   const filteredPersons =
@@ -85,7 +77,6 @@ const App = () => {
 
   const onDelete = (id) => {
     const maje = persons.find((p) => p.id === id);
-
     if (window.confirm(`estas segure que quieres eliminar a ${maje.name}`)) {
       phonebookServices.remove(id).then(() => {
         const nuevas = persons.filter((person) => person.id !== id);
