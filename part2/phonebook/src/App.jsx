@@ -5,6 +5,7 @@ import Filter from "./components/Filter";
 import PersonForm from "./components/PersonForm";
 import Persons from "./components/Persons";
 import phonebookServices from "./services/phonebook";
+import Notificacion from "./components/Notificacion";
 
 const App = () => {
   //states
@@ -12,6 +13,7 @@ const App = () => {
   const [newName, setNewName] = useState("");
   const [number, setNumber] = useState("");
   const [textFilter, setTextFilter] = useState("");
+  const [error, setError] = useState({ message: null, type: null });
 
   //Data
   useEffect(() => {
@@ -22,6 +24,7 @@ const App = () => {
   const addContact = (event) => {
     event.preventDefault();
 
+    //verify if the name is duplicated
     const isDuplicated = persons.find(
       (person) => person.name.trim() === newName.trim()
     );
@@ -56,10 +59,18 @@ const App = () => {
     };
 
     phonebookServices.add(newPerson).then((response) => {
-      alert(`${response.name} ha sido agregado`);
       setPersons([...persons, response]);
+
       setNumber("");
       setNewName("");
+
+      setError({
+        message: `${response.name} ha sido agregado`,
+        type: "success",
+      });
+      setTimeout(() => {
+        setError({ message: null, type: null });
+      }, 5000);
     });
   };
 
@@ -78,16 +89,39 @@ const App = () => {
   const onDelete = (id) => {
     const maje = persons.find((p) => p.id === id);
     if (window.confirm(`estas segure que quieres eliminar a ${maje.name}`)) {
-      phonebookServices.remove(id).then(() => {
-        const nuevas = persons.filter((person) => person.id !== id);
-        setPersons(nuevas);
-      });
+      phonebookServices
+        .remove(id)
+        .then(() => {
+          const nuevas = persons.filter((person) => person.id !== id);
+
+          setError({
+            message: `${maje.name} ha sido eliminado`,
+            type: "error",
+          });
+          setTimeout(() => {
+            setError({ message: null, type: null });
+          }, 5000);
+
+          setPersons(nuevas);
+        })
+        .catch((error) => {
+          
+          console.error("algo malo paso y no pudimos resolverlo", error);
+          setError({
+            message: `No se pudo eliminar a ${maje.name}. Tal vez ya no existe`,
+            type: "error",
+          });
+          setTimeout(() => {
+            setError({ message: null, type: null });
+          }, 5000);
+        });
     }
   };
 
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notificacion message={error.message} type={error.type} />
       <Filter value={textFilter} onChange={onFilter} />
 
       <h3>add a new</h3>
